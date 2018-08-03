@@ -59,14 +59,13 @@ class Login():
     def login(self, user, passwd, captchaData=None, token_code=None):
         url = 'https://passport.lagou.com/login/login.json'
         passwd = self.encryptPwd(passwd)
-        form_data = {
+        postdata = {
             'isValidate': 'true',
             'username': user,
             'password': passwd,
             'request_form_verifyCode': (captchaData if captchaData!=None else ''),
             'submit': '',
         }
-        print(form_data)
         token_code = self.get_token_code() if token_code is None else token_code
         header = {
             'Accept-Encoding': 'gzip,deflate,br',
@@ -82,7 +81,7 @@ class Login():
         header.update(token_code)
         #print(header)
         #print('ok')
-        response = self.session.post(url, headers=header, data=form_data)
+        response = self.session.post(url, headers=header, data=postdata)
         data = json.loads(response.content.decode('utf-8'))
         print(data)
 
@@ -147,8 +146,8 @@ class Login():
 if __name__ == '__main__':
     s = Login()
     a = s.get_token_code()
-    username = '18328592041'
-    password = 'w001~why'
+    username = input('username:')
+    password = input('password:')
     s.login(username, password, token_code=a)
     # s = s.get_cookie()
     # print(s)
