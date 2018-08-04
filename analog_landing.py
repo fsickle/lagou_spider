@@ -33,8 +33,8 @@ class Proxy():
         #     "http": proxyMeta,
         #     "https": proxyMeta,
         # }
-        proxyUser = 'H74274906A74PP2D'
-        proxyPass = 'EA516E778B9E0A75'
+        proxyUser = ''
+        proxyPass = ''
         end = proxyUser + ":" + proxyPass
         a = base64.b64encode(end.encode('utf-8')).decode('utf-8')
         proxy = "Basic " + a
