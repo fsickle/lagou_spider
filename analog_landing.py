@@ -5,29 +5,58 @@ import json
 from hashlib import md5
 import time
 from urllib.parse import urlencode
+import base64
 
-class Login():
-    def __init__(self):
+
+class Proxy():
+    def get_proxy(self):
+        '''
+        使用的讯代理，得到Proxy
+        :return: proxy
+        '''
+        # 代理服务器
+        # proxyHost = "http-dyn.abuyun.com"
+        # proxyPort = "9020"
+        #
+        # # 代理隧道验证信息
+        # proxyUser = "H74274906A74PP2D"
+        # proxyPass = "EA516E778B9E0A75"
+        #
+        # proxyMeta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
+        #     "host": proxyHost,
+        #     "port": proxyPort,
+        #     "user": proxyUser,
+        #     "pass": proxyPass,
+        # }
+        #
+        # proxies = {
+        #     "http": proxyMeta,
+        #     "https": proxyMeta,
+        # }
+        proxyUser = 'H74274906A74PP2D'
+        proxyPass = 'EA516E778B9E0A75'
+        end = proxyUser + ":" + proxyPass
+        a = base64.b64encode(end.encode('utf-8')).decode('utf-8')
+        proxy = "Basic " + a
+        return proxy
+
+
+class Login(object):
+    def __init__(self, proxy=None):
         self.session = requests.session()
         self.headers = {
-            'Accept-Encoding': 'gzip,deflate,br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Cache-Control': 'max-age=0',
-            'Connection': 'keep-alive',
-            'Host': 'passport.lagou.com',
-            'Referer': 'https://www.lagou.com/',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0(X11;Linuxx86_64)AppleWebKit/537.36(KHTML,likeGecko)Chrome/68.0.3440.75Safari/537.36'
+            'Proxy-Authorization': proxy,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': 'https://passport.lagou.com/login/login.html',
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.75 Safari/537.36'
         }
+        # self.proxies = proxy
 
     def get_token_code(self):
         url = 'https://passport.lagou.com/login/login.html'
-        # query_string = {
-        #     'ts': '1533271595716',
-        #     'signature': 'F9415BF569085BC9A80B86B4724959C7',
-        # }
-        # url = url + urlencode(query_string)
-        data = self.session.get(url, headers=self.headers)
+        print(self.headers)
+        header = self.headers.copy()
+        data = self.session.get(url, headers=header)
         soup = bs(data.text, 'lxml')
         '''
         </script>
@@ -40,10 +69,13 @@ class Login():
         '''
 
         anti = soup.find_all('script')[1].string
-        anti_token = {'X_Anti_Forge_Token': 'None',
-                      'X_Anti_Forge_Code': '0'}
+        anti_token = {
+            'X_Anti_Forge_Token': 'None',
+            'X_Anti_Forge_Code': '0'
+        }
         anti_token['X_Anti_Forge_Token'] = re.findall(r'= \'(.+?)\'', anti)[0]
         anti_token['X_Anti_Forge_Code'] = re.findall(r'= \'(.+?)\'', anti)[1]
+        print(anti_token)
         return anti_token
 
     def encryptPwd(self, password):
@@ -56,46 +88,35 @@ class Login():
     def get_Captcha(self):
         pass
 
-    def login(self, user, passwd, captchaData=None, token_code=None):
+    def login(self, user, passwd):
         url = 'https://passport.lagou.com/login/login.json'
         passwd = self.encryptPwd(passwd)
         postdata = {
             'isValidate': 'true',
             'username': user,
             'password': passwd,
-            'request_form_verifyCode': (captchaData if captchaData!=None else ''),
+            'request_form_verifyCode': '',
             'submit': '',
         }
-        token_code = self.get_token_code() if token_code is None else token_code
-        header = {
-            'Accept-Encoding': 'gzip,deflate,br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Connection': 'keep-alive',
-            'Origin': 'https://passport.lagou.com',
-            'Host': 'passport.lagou.com',
-            'Referer': 'https://passport.lagou.com/login/login.html',
-            'X-Requested-With': 'XMLHttpRequest',
-            'User-Agent': 'Mozilla/5.0(X11;Linuxx86_64)AppleWebKit/537.36(KHTML,likeGecko)Chrome/68.0.3440.75Safari/537.36'
-        }
-
+        token_code = self.get_token_code()
+        header = self.headers.copy()
         header.update(token_code)
-        #print(header)
-        #print('ok')
+        print(header)
         response = self.session.post(url, headers=header, data=postdata)
-        data = json.loads(response.content.decode('utf-8'))
-        print(data)
+        print(response.status_code)
+        print(response.text)
 
-        if data['state'] == 1:
-            return response.content
-        elif data['state'] == 10010:
-            print(data['message'])
-            #captchaData = self.getCaptcha()
-            token_code = {'X_Anti_Forge_Token': data['submitToken'],
-                      'X_Anti_Forge_Code': data['submitCode']}
-            return self.login(username, password, captchaData, token_code)
-        else:
-            print(data['message'])
-            return False
+        # if data['state'] == 1:
+        #     return response.content
+        # elif data['state'] == 10010:
+        #     print(data['message'])
+        #     #captchaData = self.getCaptcha()
+        #     token_code = {'X_Anti_Forge_Token': data['submitToken'],
+        #               'X_Anti_Forge_Code': data['submitCode']}
+        #     return self.login(username, password, captchaData, token_code)
+        # else:
+        #     print(data['message'])
+        #     return False
 
     def get_cookie(self):
         return requests.utils.dict_from_cookiejar(self.session.cookies)
@@ -103,30 +124,14 @@ class Login():
     def get_ticket(self):
         #两个重定向
         url = 'https://passport.lagou.com/grantServiceTicket/grant.html'
-        headers = {
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Connection': 'keep-alive',
-            'Host': 'passport.lagou.com',
-            'Referer': 'https://passport.lagou.com/login/login.html',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.75 Safari/537.36'
-        }
-        response = self.session.get(url, headers=headers)
+        header = self.headers.copy()
+        header['Referer'] = 'https://passport.lagou.com/login/login.html'
+        response = self.session.get(url, headers=header, allow_redirects=False)
 
         redir_url = response.next.url
         print(redir_url)
         url = re.sub('http:', 'https:', redir_url)
-
-        headers = {
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Connection': 'keep-alive',
-            'Host': 'www.lagou.com',
-            'Referer': 'https://passport.lagou.com/login/login.html',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.75 Safari/537.36'
-        }
-        response = self.session.get(url, headers=headers)
+        response = self.session.get(url, headers=header, allow_redirects=False)
         print(response.status_code)
         cookies = self.get_cookie()
         print(cookies)
@@ -134,25 +139,18 @@ class Login():
             f.write(str(cookies))
 
 
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
-    s = Login()
-    a = s.get_token_code()
-    username = input('username:')
-    password = input('password:')
-    s.login(username, password, token_code=a)
-    # s = s.get_cookie()
-    # print(s)
-    # with open('cookie_requests.txt', 'w') as f:
-    #     f.write(str(s))
+    proxy = Proxy().get_proxy()
+    s = Login(proxy)
+    username = 18328592041 #input('username:')
+    password = 'w001~why' #input('password:')
+    data = s.login(username, password)
+    if data:
+        print(data)
+        print('登录成功')
+    else:
+        print('登录不成功')
+
 
 
 
