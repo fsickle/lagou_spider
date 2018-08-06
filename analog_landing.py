@@ -14,25 +14,7 @@ class Proxy():
         使用的讯代理，得到Proxy
         :return: proxy
         '''
-        # 代理服务器
-        # proxyHost = "http-dyn.abuyun.com"
-        # proxyPort = "9020"
-        #
-        # # 代理隧道验证信息
-        # proxyUser = "H74274906A74PP2D"
-        # proxyPass = "EA516E778B9E0A75"
-        #
-        # proxyMeta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
-        #     "host": proxyHost,
-        #     "port": proxyPort,
-        #     "user": proxyUser,
-        #     "pass": proxyPass,
-        # }
-        #
-        # proxies = {
-        #     "http": proxyMeta,
-        #     "https": proxyMeta,
-        # }
+
         proxyUser = ''
         proxyPass = ''
         end = proxyUser + ":" + proxyPass
@@ -43,7 +25,7 @@ class Proxy():
 
 class Login(object):
     def __init__(self, proxy=None):
-        self.session = requests.session()
+        self.session = requests.Session()
         self.headers = {
             'Proxy-Authorization': proxy,
             'X-Requested-With': 'XMLHttpRequest',
@@ -52,8 +34,18 @@ class Login(object):
         }
         # self.proxies = proxy
 
-    def get_token_code(self):
-        url = 'https://passport.lagou.com/login/login.html'
+    def get_init_url(self):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.75 Safari/537.36'
+        }
+        url = 'https://www.lagou.com/frontLogin.do'
+        session = self.session
+        response = session.get(url, headers=headers, allow_redirects=False)
+        location = response.headers['location']
+        return location
+
+    def get_token_code(self, location):
+        url = location
         print(self.headers)
         header = self.headers.copy()
         data = self.session.get(url, headers=header)
@@ -88,7 +80,7 @@ class Login(object):
     def get_Captcha(self):
         pass
 
-    def login(self, user, passwd):
+    def login(self, user, passwd, location):
         url = 'https://passport.lagou.com/login/login.json'
         passwd = self.encryptPwd(passwd)
         postdata = {
@@ -98,11 +90,12 @@ class Login(object):
             'request_form_verifyCode': '',
             'submit': '',
         }
-        token_code = self.get_token_code()
+        token_code = self.get_token_code(location)
         header = self.headers.copy()
         header.update(token_code)
+        header['refer'] = location
         print(header)
-        response = self.session.post(url, headers=header, data=postdata)
+        response = self.session.post(url, headers=header, data=postdata, allow_redirects=False)
         print(response.status_code)
         print(response.text)
 
@@ -140,16 +133,18 @@ class Login(object):
 
 
 if __name__ == '__main__':
-    proxy = Proxy().get_proxy()
-    s = Login(proxy)
+    #proxy = Proxy().get_proxy()
+    s = Login()
+    location = s.get_init_url()
     username = 18328592041 #input('username:')
     password = 'w001~why' #input('password:')
-    data = s.login(username, password)
-    if data:
-        print(data)
-        print('登录成功')
-    else:
-        print('登录不成功')
+    s.login(username, password, location)
+    # data = s.login(username, password)
+    # if data:
+    #     print(data)
+    #     print('登录成功')
+    # else:
+    #     print('登录不成功')
 
 
 
