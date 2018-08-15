@@ -105,22 +105,17 @@ class Login(object):
     # 下载程序汇总
     def download(self, n):
         query_string = {
-            'px': 'default',
             'city': '成都',
             'needAddtionalResult': 'false'
         }
-        query_string_refer = {
-            'px': 'default',
-            'city': '成都',
-        }
+
         form_data = {
             'first': 'false',
             'pn': n,
             'kd': 'python'
         }
-        url_json = 'http://www.lagou.com/jobs/positionAjax.json?'
-        url_referer = 'https://www.lagou.com/jobs/list_python?'
-        url_referer = url_referer + urlencode(query_string_refer)
+        url_json = 'https://www.lagou.com/jobs/positionAjax.json?'
+        url_referer = 'https://www.lagou.com/jobs/list_python?labelWords=&fromSearch=true&suginput='
         headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.'
                           '3440.75 Safari/537.36',
@@ -130,8 +125,10 @@ class Login(object):
             'X-Requested-With': 'XMLHttpRequest',
         }
         url_json = url_json + urlencode(query_string)
+        print(url_json)
         response = self.session.post(url_json, data=form_data, headers=headers, proxies=self.proxies)
         content = json.loads(response.text)
+        print(content)
         num = content['content']['positionResult']['resultSize']
         # print(num)
         for i in range(int(num)):
@@ -145,12 +142,7 @@ class Login(object):
     # 下载具体信息
     def download_message(self, id):
         job_url = 'https://www.lagou.com/jobs/' + str(id) + '.html'
-        query_string_refer = {
-            'px': 'default',
-            'city': '成都',
-        }
-        url_referer = 'https://www.lagou.com/jobs/list_python?'
-        url_referer = url_referer + urlencode(query_string_refer)
+        url_referer = 'https://www.lagou.com/jobs/list_python?labelWords=&fromSearch=true&suginput='
         headers = {
             'Upgrade-Insecure-Requests': '1',
             'Host': 'www.lagou.com',
@@ -192,7 +184,7 @@ if __name__ == '__main__':
     if not s.get_cookies():
         username = input('username:')
         password = input('password:')
-        s.login(user, passwd)
+        s.login(username, password)
     s.download(1)
 
 
