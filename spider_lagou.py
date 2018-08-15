@@ -15,6 +15,7 @@ import random
 
 class Login(object):
     def __init__(self):
+        # 设置 session
         self.session = requests.Session()
         self.session.mount('http://', HTTPAdapter(max_retries=5))
         self.session.mount('https://', HTTPAdapter(max_retries=5))
@@ -23,10 +24,11 @@ class Login(object):
             'Referer': 'https://passport.lagou.com/login/login.html',
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:51.0) Gecko/20100101 Firefox/51.0',
         }
-        self.proxyHost = "http-cla.abuyun.com"
-        self.proxyPort = "9030"
-        self.proxyUser = ''
-        self.proxyPass = ''
+        # 设置代理
+        self.proxyHost = "http-pro.abuyun.com"
+        self.proxyPort = "9010"
+        self.proxyUser = 'HV2C3723AY29332P'
+        self.proxyPass = '9FB6F91747CABE83'
         self.proxyMeta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
             "host": self.proxyHost,
             "port": self.proxyPort,
@@ -38,10 +40,12 @@ class Login(object):
             "http": self.proxyMeta,
             "https": self.proxyMeta,
         }
+        # 设置mongodb
         self.client = pymongo.MongoClient('localhost')
         self.db = self.client['jobs']
         self.db['lagou_jobs'].create_index('url', unique=True)
 
+    # 获取表单隐藏参数
     def get_token_code(self):
         url = 'https://passport.lagou.com/login/login.html'
         header = self.headers.copy()
@@ -52,6 +56,7 @@ class Login(object):
             Forge_Code = match.group(2)
         return Forge_Token, Forge_Code
 
+    # 对密码加密
     def encryptPwd(self, password):
         # 对密码的双重加密
         password = md5(password.encode('utf-8')).hexdigest()
@@ -59,6 +64,7 @@ class Login(object):
         password = md5(password.encode('utf-8')).hexdigest()
         return password
 
+    # 登陆
     def login(self, user, passwd):
         login_url = 'https://passport.lagou.com/login/login.json'
         postdata = {
@@ -87,6 +93,7 @@ class Login(object):
             print('失败')
             return False
 
+    # 检查是否已有cookies
     def get_cookies(self):
         try:
             self.session.cookies.load('LagouCookies', ignore_discard=True)
@@ -95,15 +102,16 @@ class Login(object):
             print('cookie 未保存或过期')
             return False
 
-    def login_check(self, user, passwd):
-        if not self.get_cookies():
-            self.login(user, passwd)
-
+    # 下载程序汇总
     def download(self, n):
         query_string = {
             'px': 'default',
             'city': '成都',
             'needAddtionalResult': 'false'
+        }
+        query_string_refer = {
+            'px': 'default',
+            'city': '成都',
         }
         form_data = {
             'first': 'false',
@@ -112,40 +120,48 @@ class Login(object):
         }
         url_json = 'http://www.lagou.com/jobs/positionAjax.json?'
         url_referer = 'https://www.lagou.com/jobs/list_python?'
-        url_referer = url_referer + urlencode(query_string)
+        url_referer = url_referer + urlencode(query_string_refer)
         headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.'
                           '3440.75 Safari/537.36',
             'Referer': url_referer,
-            'X-Anit-Forge-Code': '0',
-            'X-Anit-Forge-Token': 'None',
+            # 'X-Anit-Forge-Code': '0',
+            # 'X-Anit-Forge-Token': 'None',
             'X-Requested-With': 'XMLHttpRequest',
         }
         url_json = url_json + urlencode(query_string)
-        response = self.session.post(url_json, data=form_data, headers=headers)
+        response = self.session.post(url_json, data=form_data, headers=headers, proxies=self.proxies)
         content = json.loads(response.text)
         num = content['content']['positionResult']['resultSize']
         # print(num)
         for i in range(int(num)):
             job_id = content['content']['positionResult']['result'][i]['positionId']
-            # print(job_id)
+            print(job_id)
             time.sleep(1)
             html = self.download_message(job_id)
             message = self.parse(html)
             self.save_to_mongo(message)
 
+    # 下载具体信息
     def download_message(self, id):
         job_url = 'https://www.lagou.com/jobs/' + str(id) + '.html'
+        query_string_refer = {
+            'px': 'default',
+            'city': '成都',
+        }
+        url_referer = 'https://www.lagou.com/jobs/list_python?'
+        url_referer = url_referer + urlencode(query_string_refer)
         headers = {
             'Upgrade-Insecure-Requests': '1',
             'Host': 'www.lagou.com',
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.'
                           '3440.75 Safari/537.36',
-            'Referer': 'https://www.lagou.com/jobs/list_python?px=default&city=%E6%88%90%E9%83%BD',
+            'Referer': url_referer,
             }
-        response = self.session.get(job_url, headers=headers)
+        response = self.session.get(job_url, headers=headers, proxies=self.proxies)
         return response
 
+    # 解析信息
     def parse(self, response):
         doc = pq(response.text)
         message = {
@@ -154,7 +170,7 @@ class Login(object):
             'job_name': doc('div.position-head div div div.job-name span.name').text(),
             'job_request': doc('.position-content .job_request span').text(),
             'advantage': doc('#job_detail > dd.job-advantage').text(),
-            'describe': doc('dl#job_detail > dd.job_bt > div > p').text()[:50],
+            'describe': doc('dl#job_detail > dd.job_bt > div > p').text(),
             'location': doc('#job_detail > dd.job-address.clearfix > div.work_addr').text(),
         }
         # print(message)
@@ -173,10 +189,11 @@ class Login(object):
 
 if __name__ == '__main__':
     s = Login()
-    username = input('username:')
-    password = input('password:')
-    s.login_check(username, password)
-    s.download(2)
+    if not s.get_cookies():
+        username = input('username:')
+        password = input('password:')
+        s.login(user, passwd)
+    s.download(1)
 
 
 
