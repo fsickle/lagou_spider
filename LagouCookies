@@ -1,0 +1,4 @@
+#LWP-Cookies-2.0
+Set-Cookie3: LG_LOGIN_USER_ID=82576da537cfa58962f2917099da654c9a24e6420f5a8705a7fef6af4f719944; path="/"; domain=".lagou.com"; path_spec; domain_dot; expires="2086-09-02 06:02:05Z"; version=0
+Set-Cookie3: user_trace_token="20180815104758-89c07529-f3f0-4088-a759-3e5e9ab0a8ac"; path="/"; domain=".lagou.com"; path_spec; domain_dot; expires="2019-08-15 02:47:58Z"; version=0
+Set-Cookie3: ticketGrantingTicketId="_CAS_TGT_TGT-2b75613283f541108a38ebc78b883117-20180815104758-_CAS_TGT_"; path="/"; domain="passport.lagou.com"; path_spec; expires="2018-08-22 02:47:58Z"; version=0

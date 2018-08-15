@@ -27,8 +27,8 @@ class Login(object):
         # 设置代理
         self.proxyHost = "http-pro.abuyun.com"
         self.proxyPort = "9010"
-        self.proxyUser = 'HV2C3723AY29332P'
-        self.proxyPass = '9FB6F91747CABE83'
+        self.proxyUser = ''
+        self.proxyPass = ''
         self.proxyMeta = "http://%(user)s:%(pass)s@%(host)s:%(port)s" % {
             "host": self.proxyHost,
             "port": self.proxyPort,
@@ -120,9 +120,11 @@ class Login(object):
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.'
                           '3440.75 Safari/537.36',
             'Referer': url_referer,
-            # 'X-Anit-Forge-Code': '0',
-            # 'X-Anit-Forge-Token': 'None',
+            'X-Anit-Forge-Code': '0',
+            'X-Anit-Forge-Token': 'None',
             'X-Requested-With': 'XMLHttpRequest',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
         }
         url_json = url_json + urlencode(query_string)
         print(url_json)
@@ -149,6 +151,8 @@ class Login(object):
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.'
                           '3440.75 Safari/537.36',
             'Referer': url_referer,
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
             }
         response = self.session.get(job_url, headers=headers, proxies=self.proxies)
         return response
